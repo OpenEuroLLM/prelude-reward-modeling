@@ -15,7 +15,7 @@ cd /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling
 unset SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 IFS=, read -ra list <<< "${JUDGES:?set JUDGES=a,b,c (one node per judge)}"
 [ "${#list[@]}" -eq "$SLURM_NNODES" ] || { echo "${#list[@]} judges but $SLURM_NNODES nodes"; exit 2; }
-echo "start $(date -Is): $SLURM_NNODES nodes ($SLURM_JOB_NODELIST): $JUDGES thinking=${THINKING:-default}"
+echo "start $(date -Is): $SLURM_NNODES nodes ($SLURM_JOB_NODELIST): $JUDGES"
 rc=0
 srun --nodes="$SLURM_NNODES" --ntasks="$SLURM_NNODES" --ntasks-per-node=1 --kill-on-bad-exit=0 \
     bash collect-preferences/slurm/pilot_node.sh || rc=$?

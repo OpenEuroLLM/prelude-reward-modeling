@@ -6,7 +6,7 @@
 #   JUDGE=gemma-4-31B-it NODES=6 sbatch --array=0-5 -J judge-gemma collect-preferences/slurm/judge_full.sbatch
 #   JUDGE=gemma-4-31B-it NODES=6 sbatch --array=3 -J judge-gemma collect-preferences/slurm/judge_full.sbatch
 # Environment: JUDGE, NODES, PAIRS (default data/preferences/pairs.parquet), OUT (default data/preferences/votes),
-# THINKING (default: judge.py's, on), LIMIT (pairs per replica, for a short test, with OUT elsewhere).
+# LIMIT (pairs per replica, for a short test, with OUT elsewhere).
 #SBATCH --job-name=judge
 #SBATCH --account=project_465003445
 #SBATCH --partition=standard-g

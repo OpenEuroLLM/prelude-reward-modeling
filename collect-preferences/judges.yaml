@@ -1,7 +1,10 @@
-# Judge pool candidates for the preference-labeling stage (collect-preferences/).
+# The judges of the preference-labeling stage (collect-preferences/): the three of the pool and the three
+# substitutes, in that order. The other candidates of the pilot (Qwen3.5-27B, Command A+ 05-2026, Apertus 1.5 70B,
+# Mistral Large 2411) are in the repository README's judge table and are no longer configured here.
 #
 # Every judge is a strong, multilingual open model that fits one LUMI-G node in bf16 (8 x 64 GB GCDs;
-# gfx90a has no FP8 hardware, so only bf16 checkpoints are usable). Prelude checkpoints are never judges.
+# gfx90a has no FP8 hardware, so only bf16 checkpoints are usable) and whose licence puts no restriction on its
+# outputs. Prelude checkpoints are never judges.
 #
 # Fields
 #   hf, revision    Hugging Face repo and the commit the weights were downloaded at. `main` is resolved to a
@@ -10,8 +13,7 @@
 #   family          model family. A judge never grades a pair that contains an answer from its own family
 #                   (self-preference and preference leakage). Responder families: qwen = qwen3.5-9b and
 #                   qwen2.5-7b; gemma = gemma-4-12b; mistral = mistral-7b-v0.1 and zephyr-7b-beta (a
-#                   Mistral-7B fine-tune); apertus = apertus-8b-2509. openai, glm and cohere have no
-#                   responders in the pool.
+#                   Mistral-7B fine-tune). openai and glm have no responders in the pool.
 #   convert         the judge is not used as published: convert_judges.py <value> downloads and converts it
 #                   (fetch_judges.py skips it).
 #   licence         what the licence says about the judge's outputs (our labels).
@@ -19,50 +21,34 @@
 #                   100-125B: 8, one replica per node).
 #   max_tokens      budget of new tokens per call when it differs from judge.py's default of 16,384 (a call
 #                   without a verdict is retried once with twice the budget, capped by the context).
-#   thinking        chat-template switches for the native thinking mode, keyed "off"/"on" (quoted: YAML 1.1
-#                   reads bare off/on as booleans). Every judge with a thinking mode runs with it on (user,
-#                   2026-11-15: "it doesn't even make sense to use model that support reasoning without
-#                   reasoning"); judge.py's default. `off` is kept for the earlier pilot runs and ablations.
-#   sampling        decoding per thinking mode, keyed like `thinking`: the vendor's recommendation (Gemma 4 and
-#                   Qwen3.5 model cards, Qwen's "general tasks" settings; the gpt-oss repository; for GLM the
-#                   Z.ai API default, as the GLM-4.5 card gives none). Never greedy for a model that reasons:
+#   thinking        the chat-template switch that turns the native thinking mode on (gpt-oss and Mistral Small
+#                   4 take a reasoning effort instead). Every judge runs with it (user, 2026-11-15: "it doesn't
+#                   even make sense to use model that support reasoning without reasoning").
+#   sampling        decoding in that mode: the vendor's recommendation (Gemma 4 and Qwen model cards, Qwen's
+#                   "general tasks" settings; the gpt-oss repository; for GLM the Z.ai API default, as the
+#                   GLM-4.5 card gives none; Mistral Small 4's card). Never greedy for a model that reasons:
 #                   the first pilot runs were greedy, and a third of their calls without a verdict were
 #                   repetition loops. judge.py seeds every call from (pair, order, attempt).
 #   vllm            extra engine arguments.
 #   env             environment variables judge.py sets before vLLM starts (e.g. allocator settings).
 judges:
-  - name: qwen3.5-122b-a10b
-    hf: Qwen/Qwen3.5-122B-A10B
-    revision: dc4d348443bc740c68e2d77492492c11606384d5
-    family: qwen
-    licence: Apache-2.0 (no restriction on outputs)
-    arch: Qwen3_5MoeForConditionalGeneration
-    params: 122B total, 10B active (MoE)
-    bf16_gb: 250
-    tp: 8
-    max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0.0, presence_penalty: 1.5},
-               "on": {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 1.5}}
-    vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
-    note: strongest multilingual Qwen3.5 that fits one node (MMMLU 86.7, 201 languages); MoE kernels on
-      MI250X unmeasured, so qwen3.5-27b is the fallback for the Qwen slot.
-
-  - name: qwen3.5-27b
-    hf: Qwen/Qwen3.5-27B
-    revision: fc05daec18b0a78c049392ed2e771dde82bdf654
-    family: qwen
-    licence: Apache-2.0 (no restriction on outputs)
-    arch: Qwen3_5ForConditionalGeneration
-    params: 27B dense
-    bf16_gb: 56
+  - name: gemma-4-31B-it
+    hf: google/gemma-4-31B-it
+    revision: 842da3794eaa0b77d5f08bae87a17459d91ff475
+    family: gemma
+    licence: Apache-2.0 (no restriction on outputs; unlike the Gemma 3 terms)
+    arch: Gemma4ForConditionalGeneration
+    params: 31B dense
+    bf16_gb: 63
     tp: 2
     max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0.0, presence_penalty: 1.5},
-               "on": {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 1.5}}
-    vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
-    note: dense Qwen3.5 (MMMLU 85.9); four replicas per node.
+    thinking: {enable_thinking: true}
+    sampling: {temperature: 1.0, top_p: 0.95, top_k: 64}
+    vllm: {limit_mm_per_prompt: {image: 0, audio: 0}}
+    note: >-
+      pool judge. MMMLU 88.4, 140+ languages; Gemma 3 27B was the best open MQM translation judge. Pilot
+      (round 3): 94.7% agreement with Opus at 0.50 node-hours per 1,000 pairs. Excluded on pairs with a
+      Gemma 4 12B answer.
 
   - name: qwen3.8-27b
     hf: Qwen/Qwen3.8-27B
@@ -74,34 +60,18 @@ judges:
     bf16_gb: 56
     tp: 2
     max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0.0, presence_penalty: 1.5},
-               "on": {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 0.0}}
+    thinking: {enable_thinking: true}
+    sampling: {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 0.0}
     vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
-    note: Aug 2026 successor of Qwen3.5-27B with the same architecture. Its card reports agentic and
-      reasoning benchmarks but no multilingual ones, which is why the first candidate list passed it over
-      (a mistake, since the pilot measures what matters). Thinking is on by default at reasoning_effort xhigh,
-      the template default, kept. The template implements effort levels by putting its own line before the
-      system prompt (xhigh "Reasoning effort is set to xhigh. Please think carefully through the task,
-      validate key assumptions, consider plausible alternatives, and prioritize correctness, consistency, and
-      clarity in the final answer." -- medium adds nothing), as gpt-oss states its effort in its system header. Sampling from
-      the card (thinking mode has no presence penalty, unlike 3.5).
-
-  - name: gemma-4-31B-it
-    hf: google/gemma-4-31B-it
-    revision: 842da3794eaa0b77d5f08bae87a17459d91ff475
-    family: gemma
-    licence: Apache-2.0 (no restriction on outputs; unlike the Gemma 3 terms)
-    arch: Gemma4ForConditionalGeneration
-    params: 31B dense
-    bf16_gb: 63
-    tp: 2
-    max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 1.0, top_p: 0.95, top_k: 64}, "on": {temperature: 1.0, top_p: 0.95, top_k: 64}}
-    vllm: {limit_mm_per_prompt: {image: 0, audio: 0}}
-    note: MMMLU 88.4, 140+ languages; Gemma 3 27B was the best open MQM translation judge. Already
-      downloaded for the translation stage.
+    note: >-
+      pool judge. Aug 2026 successor of Qwen3.5-27B with the same architecture; the best agreement with
+      Opus in the pilot (95.7%) at 0.91 node-hours per 1,000 pairs. Thinking is on by default at
+      reasoning_effort xhigh, the template default, kept. The template implements effort levels by putting its
+      own line before the system prompt (xhigh "Reasoning effort is set to xhigh. Please think carefully through
+      the task, validate key assumptions, consider plausible alternatives, and prioritize correctness,
+      consistency, and clarity in the final answer."), as gpt-oss states its effort in its system header.
+      Sampling from the card (the thinking mode has no presence penalty, unlike Qwen3.5). Excluded on pairs
+      with a Qwen3.5-9B or Qwen2.5-7B answer.
 
   - name: gpt-oss-120b-bf16
     hf: unsloth/gpt-oss-120b-BF16
@@ -113,61 +83,33 @@ judges:
     bf16_gb: 234
     tp: 8
     max_model_len: 65536
-    thinking: {"off": {reasoning_effort: medium}, "on": {reasoning_effort: high}}
-    sampling: {"off": {temperature: 1.0, top_p: 1.0}, "on": {temperature: 1.0, top_p: 1.0}}
-    note: bf16 re-upload of openai/gpt-oss-120b, since the native MXFP4 kernels are not available on
-      gfx90a. Best open English judge in a 21-judge 2026 study; MMMLU 81.3 over 14 languages, so its
-      strength in the small European languages must be measured. gpt-oss always reasons; `off` is its default
-      `medium` (which the v1 pilot run used, since the unquoted yaml keys off/on were booleans and no switch
-      was applied) and `on` is `high`; the analysis channel counts against the token budget (4% of the v1 run's
-      answers were cut off at 1,500 tokens). Its final channel header may carry a <|constrain|>json tag,
-      which judge.py's parser accepts.
+    thinking: {reasoning_effort: high}
+    sampling: {temperature: 1.0, top_p: 1.0}
+    note: >-
+      pool judge, on every pair (no responder of its family). bf16 re-upload of openai/gpt-oss-120b, since
+      the native MXFP4 kernels are not available on gfx90a. Pilot (round 3): 93.2% agreement with Opus at
+      reasoning effort high (90.2% at medium) at 0.49 node-hours per 1,000 pairs. gpt-oss always reasons; the
+      analysis channel counts against the token budget. Its final channel header may carry a <|constrain|>json
+      tag, which judge.py's parser accepts.
 
-  - name: glm-4.5-air
-    hf: zai-org/GLM-4.5-Air
-    revision: a24ceef6ce4f3536971efe9b778bdaa1bab18daa
-    family: glm
-    licence: MIT (no restriction on outputs)
-    arch: Glm4MoeForCausalLM
-    params: 106B total, 12B active (MoE)
-    bf16_gb: 221
-    tp: 8
-    max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 1.0, top_p: 0.95}, "on": {temperature: 1.0, top_p: 0.95}}
-    note: fourth family for pool diversity; multilingual quality in European languages unknown, to be
-      measured in the pilot.
-
-  - name: command-a-plus-2605
-    hf: CohereLabs/command-a-plus-05-2026-bf16
-    revision: 5fb6fde5fd12ff89356aae552e11883bc49f069b
-    family: cohere
+  - name: qwen3.5-122b-a10b
+    hf: Qwen/Qwen3.5-122B-A10B
+    revision: dc4d348443bc740c68e2d77492492c11606384d5
+    family: qwen
     licence: Apache-2.0 (no restriction on outputs)
-    arch: Cohere2VisionForConditionalGeneration
-    params: 218B total, 25B active (MoE, 128 experts, 8 per token; 8 of 32 layers full attention, 24 sliding 4,096)
-    bf16_gb: 437
+    arch: Qwen3_5MoeForConditionalGeneration
+    params: 122B total, 10B active (MoE)
+    bf16_gb: 250
     tp: 8
     max_model_len: 65536
-    thinking: {"off": {reasoning: false}, "on": {reasoning: true}}
-    sampling: {"off": {temperature: 0.6, top_p: 0.95}, "on": {temperature: 0.6, top_p: 0.95}}
-    vllm: {limit_mm_per_prompt: {image: 0}, gpu_memory_utilization: 0.95, max_num_seqs: 128}
-    env: {VLLM_ROCM_MOE_PADDING: "0"}
-    note: Cohere's May 2026 multilingual and reasoning model. The weights take 437 of the node's 512 GB
-      (51 GiB per GCD). Jobs 23766373 and 23770338 ran out of memory at the end of loading, in vLLM's
-      ROCm-only MoE weight padding (each layer's experts copied into a slightly wider buffer, about 5 GiB
-      more per GCD, plus 7.9 GiB of fragments; this PyTorch build does not support expandable segments),
-      hence VLLM_ROCM_MOE_PADDING=0, a small kernel-speed optimisation. Without it the weights take 50.9 GiB
-      per GCD and 7.8 GiB is left for the KV cache (1.04M tokens). Loading takes about 25 minutes;
-      with 24 sliding-window layers its KV cache needs only about 0.65 GB per 8k-token call, so the rest (about 7 GiB per GCD)
-      holds about 90 such calls. Thinks by default (the template's thinking markers). The template always
-      puts a platform turn before our system prompt (Cohere's safety preamble, "Your name is Command",
-      an empty tool list); only a non-empty platform_instruction_override replaces it, so it is kept as
-      the vendor's format, like gpt-oss's harmony header. No responder family
-      in the pool, so it is never excluded. Sampling from the card. Pilot round 3, stopped after 187 of
-      2,016 calls (jobs 23770338 and 23773647) as too slow, about 0.25 calls per second on a node or
-      2.2 node-hours per 1,000 pairs (vLLM has no tuned MoE kernel configuration for its shape on the MI250X,
-      and attention falls back to Triton); on the 73 pairs judged in both orders it agreed with Opus on
-      95.9%, Qwen3.8-27B on 95.8% and Gemma on 98.6% of the same pairs. Not in the proposed pool.
+    thinking: {enable_thinking: true}
+    sampling: {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 1.5}
+    vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
+    note: >-
+      first substitute (in place of Gemma on pairs with a Gemma 4 12B answer) and first tie-breaker.
+      Strongest multilingual Qwen3.5 that fits one node (MMMLU 86.7, 201 languages). Pilot (round 3): 94.8%
+      agreement with Opus at 1.03 node-hours per 1,000 pairs. Sampling from the card (Qwen's "general tasks"
+      settings for the thinking mode).
 
   - name: mistral-small-4-119b
     hf: mistralai/Mistral-Small-4-119B-2603
@@ -180,70 +122,33 @@ judges:
     bf16_gb: 239
     tp: 8
     max_model_len: 65536
-    thinking: {"off": {reasoning_effort: none}, "on": {reasoning_effort: high}}
-    sampling: {"off": {temperature: 0.3}, "on": {temperature: 0.7}}
+    thinking: {reasoning_effort: high}
+    sampling: {temperature: 0.7}
     vllm: {tokenizer_mode: mistral, config_format: mistral, load_format: mistral, limit_mm_per_prompt: {image: 0}}
-    note: Published in FP8 only, which the MI250X cannot compute with, and in HF format as a mistral4
-      model that vLLM 0.26 does not know; convert_judges.py dequantises the native checkpoint to bf16, which
-      vLLM loads as MistralLarge3ForCausalLM. Reasoning per request (reasoning_effort high), between [THINK]
-      and [/THINK]. Sampling from the card, temperature 0.7 for reasoning (0.0 to 0.7 without). Excluded on
-      pairs with Mistral-7B or Zephyr answers (Mistral family), about 29% of the pairs. Pilot round 3
-      (job 23770338) gave 89.4% agreement with Opus (English 80.7%), consistency 84.2%, and the longer
-      answer in 76% of its disagreements with Opus, at 0.87 node-hours per 1,000 pairs. Not in the proposed pool.
+    note: >-
+      second substitute (in place of Qwen3.8 on pairs with a Qwen3.5-9B or Qwen2.5-7B answer, unless the
+      other answer is from a Mistral model) and second tie-breaker. Published in FP8 only, which the MI250X
+      cannot compute with, and in HF format as a mistral4 model that vLLM 0.26 does not know; convert_judges.py
+      dequantises the native checkpoint to bf16, which vLLM loads as MistralLarge3ForCausalLM. Reasoning per
+      request (reasoning_effort high), between [THINK] and [/THINK]. Sampling from the card (temperature 0.7
+      for reasoning). Pilot (round 3): 89.4% agreement with Opus (English 80.7%), the longer answer in 76% of
+      its disagreements with Opus, at 0.87 node-hours per 1,000 pairs. Excluded on pairs with a Mistral-7B or
+      Zephyr answer.
 
-  - name: apertus-1.5-70b
-    hf: swiss-ai/Apertus-v1.5-70B
-    revision: b212ebf8758bcd8200cc26b83a3f14759a94aa56
-    convert: apertus-1.5
-    family: apertus
-    licence: Apache-2.0 and the Apertus acceptable use policy (outputs not restricted)
-    arch: ApertusForCausalLM (text-only extraction of Apertus1p5ForConditionalGeneration)
-    params: 72B dense (70B language model)
-    bf16_gb: 141
-    tp: 4
-    max_model_len: 65536
-    thinking: {"off": {enable_thinking: false}, "on": {enable_thinking: true}}
-    sampling: {"off": {temperature: 0.8, top_p: 0.9}, "on": {temperature: 0.8, top_p: 0.9}}
-    note: Swiss AI's July 2026 model, trained on fully open data with a focus on European languages; gated
-      behind its use policy. vLLM 0.26 knows only the Apertus v1 architecture, which its language model
-      matches tensor for tensor, so convert_judges.py extracts that text-only model. Thinks only when asked
-      (enable_thinking), between the inner_prefix and inner_suffix tokens. Neither the v1.5 card nor its
-      generation_config gives sampling settings, so the Apertus v1 card's are used (temperature 0.8,
-      top-p 0.9). Excluded on pairs with Apertus-8B answers (Apertus family), about 15% of the pairs.
-      Pilot round 3 (job 23770338) gave 83.3% agreement with Opus (English 72.3%, the smallest half of the
-      languages 87.1%), consistency 82.6%, no verdict in 1.4% of calls, and the longer answer in 85% of
-      its disagreements with Opus, at 1.21 node-hours per 1,000 pairs. Not in the proposed pool.
-
-  - name: mistral-large-2411
-    hf: mistralai/Mistral-Large-Instruct-2411
-    revision: ba78820945ae22361b0274cf0ae6d696c967c1a4
-    family: mistral
-    licence: Mistral Research License 0.1 - research purposes only, and sections 3.2 and 4.2 extend the
-      restriction to Outputs, so its votes are usable for the pilot and for a research release but not in a
-      commercially usable release (kept in a flaggable column)
-    arch: MistralForCausalLM
-    params: 123B dense
-    bf16_gb: 245
+  - name: glm-4.5-air
+    hf: zai-org/GLM-4.5-Air
+    revision: a24ceef6ce4f3536971efe9b778bdaa1bab18daa
+    family: glm
+    licence: MIT (no restriction on outputs)
+    arch: Glm4MoeForCausalLM
+    params: 106B total, 12B active (MoE)
+    bf16_gb: 221
     tp: 8
-    max_model_len: 32768
-    max_tokens: 2048           # answers are about 300 tokens; a larger budget would shut out long prompts (32k context)
-    thinking: {}
-    sampling: {"off": {temperature: 0.0}}   # greedy, as in the pilot: no thinking mode and no recommendation in the card
-    vllm: {tokenizer_mode: mistral}
-    note: requested as a strong European multilingual judge. The HF-format tokenizer of Mistral models is
-      broken in transformers 5.10 (it dropped spaces for Ministral), so the mistral tokenizer mode is used;
-      consolidated.* duplicates are not downloaded.
-
-# Instruments (not judges): programmatic labels stored next to the votes.
-tools:
-  - name: qwen3guard-gen-8b
-    hf: Qwen/Qwen3Guard-Gen-8B
-    revision: 4505cb1a6f1864f21f8b27f7daf1b9a1aab6edbb
-    licence: Apache-2.0
-    note: harm and refusal labels per response (119 languages); sees the full thinking trace.
-  - name: glotlid
-    hf: cis-lmu/glotlid
-    revision: e9592e0a9bc3b6f2a946de94faaa188d1dd6f522
-    allow: ["model_v3.bin"]
-    licence: Apache-2.0 (model); labels cover all 38 of our languages including Latgalian
-    note: language-fidelity label, alongside OpenLID-v3 (data/models/openlid-v3) for the close pairs.
+    max_model_len: 65536
+    thinking: {enable_thinking: true}
+    sampling: {temperature: 1.0, top_p: 0.95}
+    note: >-
+      third substitute (pairs with both a Qwen and a Mistral answer, or a Gemma and a Qwen answer) and
+      third tie-breaker; never excluded (no responder of its family). Pilot (round 3): 88.0% agreement with
+      Opus, leaning to longer answers, at 0.65 node-hours per 1,000 pairs. Often answers inside an unclosed
+      think block, which judge.py's parser accepts when the output stops right after the JSON object.

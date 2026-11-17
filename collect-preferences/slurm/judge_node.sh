@@ -1,7 +1,7 @@
 #!/bin/bash
 # One node of the full run (judge_full.sbatch): 8/tp replicas of $JUDGE, replica i on GPUs i*tp .. i*tp+tp-1,
 # taking shard NODE*(8/tp)+i of NODES*(8/tp) with --skip-own-family. Environment: JUDGE, NODE, NODES, PAIRS, OUT,
-# THINKING, LIMIT.
+# LIMIT.
 set -euo pipefail
 cd /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling
 PAIRS=${PAIRS:-data/preferences/pairs.parquet}
@@ -16,7 +16,7 @@ for i in $(seq 0 $(( R - 1 ))); do
     devs=$(seq -s, $(( i * TP )) $(( i * TP + TP - 1 )))
     HIP_VISIBLE_DEVICES=$devs CUDA_VISIBLE_DEVICES=$devs collect-preferences/run_gpu.sh judge.py \
         --judge "$JUDGE" --pairs "$PAIRS" --out "$OUT" --shard "$s/$N" --tp "$TP" --skip-own-family \
-        ${THINKING:+--thinking "$THINKING"} ${LIMIT:+--limit "$LIMIT"} \
+        ${LIMIT:+--limit "$LIMIT"} \
         > "data/logs/judge-${JUDGE}-s${s}of${N}-${SLURM_JOB_ID:-local}.log" 2>&1 &
     pids+=($!)
 done

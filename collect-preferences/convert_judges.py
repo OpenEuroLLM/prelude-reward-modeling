@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Download and convert the two judge candidates that vLLM 0.26 on LUMI cannot load as published (login node, CPU).
+"""Download and convert Mistral Small 4, which vLLM 0.26 on LUMI cannot load as published (login node, CPU).
 
   collect-preferences/run.sh convert_judges.py mistral-small-4     # Mistral Small 4 119B: FP8 -> bf16
-  collect-preferences/run.sh convert_judges.py apertus-1.5         # Apertus v1.5 70B: text-only Apertus v1 layout
 
 mistral-small-4 (mistralai/Mistral-Small-4-119B-2603). Published in FP8 (E4M3, one scale per tensor), which the
 MI250X cannot compute with, and in HF format as a `mistral4` model that vLLM 0.26 does not know. Its native
@@ -11,14 +10,6 @@ attention, mixture of experts with a shared expert), which vLLM 0.26 supports. E
 its qscale_weight (vLLM reads that as weight_scale: dequantised weight = FP8 weight x scale) and stored in bf16;
 the activation scales (qscale_act) are dropped and params.json loses its "quantization" block. Nothing else
 changes. Run with tokenizer_mode, config_format and load_format "mistral".
-
-apertus-1.5 (swiss-ai/Apertus-v1.5-70B). Published as Apertus1p5ForConditionalGeneration with vision and audio
-tokenizers, which vLLM 0.26 does not know. Its language model has exactly the tensors of Apertus v1
-(ApertusForCausalLM: xIELU MLP, QK-norm), so the text-only checkpoint renames model.language_model.* to model.*,
-keeps lm_head, drops the vision and audio tokenizers and cuts the input embedding to the 131,072 text tokens:
-the rows above are image and audio codes that a text prompt never contains, and the output layer has only
-131,072 rows. config.json is the Apertus v1 layout (taken from data/models/apertus-8b-2509) with v1.5's
-dimensions and RoPE. The script checks that every special token of the chat template lies below 131,072.
 
 Sources go to data/models/_src/<name>/ and are kept; the result goes to data/models/<name>/ with
 _download_info.json (repo, revision, what was converted) marked complete, as fetch_judges.py writes it.
@@ -42,13 +33,7 @@ SPECS = {
                             allow=["params.json", "consolidated-*.safetensors", "consolidated.safetensors.index.json",
                                    "tekken.json", "generation_config.json", "chat_template.jinja", "SYSTEM_PROMPT.txt",
                                    "README.md", "processor_config.json"]),
-    "apertus-1.5": dict(name="apertus-1.5-70b", repo="swiss-ai/Apertus-v1.5-70B",
-                        revision="b212ebf8758bcd8200cc26b83a3f14759a94aa56",
-                        allow=["config.json", "generation_config.json", "chat_template.jinja", "tokenizer.json",
-                               "tokenizer_config.json", "special_tokens_map.json", "model.safetensors.index.json",
-                               "model-apertus-model-*.safetensors", "LICENSE.txt", "README.md"]),
 }
-TEXT_VOCAB = 131072
 
 
 def download(spec):
@@ -188,72 +173,11 @@ def mistral_small_4(spec):
                       "params.json without 'quantization'; native Mistral format (consolidated-*.safetensors)")
 
 
-def apertus_15(spec):
-    from transformers import AutoTokenizer
-    src = download(spec)
-    dst = os.path.join(MODELS, spec["name"])
-    os.makedirs(dst, exist_ok=True)
-    clean(dst, ["model-*.safetensors", "*.tmp"])
-    c15 = json.load(open(os.path.join(src, "config.json")))
-    t15 = c15["text_config"]
-    cfg = json.load(open(os.path.join(MODELS, "apertus-8b-2509", "config.json")))         # Apertus v1 layout
-    for k in list(cfg):
-        if k in t15 and k not in ("architectures", "model_type", "transformers_version", "torch_dtype", "dtype"):
-            cfg[k] = t15[k]
-    rp = t15["rope_parameters"]
-    cfg["rope_theta"] = rp["rope_theta"]
-    cfg["rope_scaling"] = {"factor": rp["factor"], "high_freq_factor": rp["high_freq_factor"], "low_freq_factor": rp["low_freq_factor"],
-                           "original_max_position_embeddings": rp["original_max_position_embeddings"],
-                           "rope_type": rp["rope_type"], "type": rp["rope_type"]}
-    cfg["vocab_size"] = TEXT_VOCAB
-    cfg["tie_word_embeddings"] = bool(c15.get("tie_word_embeddings"))
-    cfg["architectures"], cfg["model_type"] = ["ApertusForCausalLM"], "apertus"
-    cfg.pop("rope_parameters", None)
-    for f in ("tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "chat_template.jinja", "generation_config.json"):
-        if os.path.exists(os.path.join(src, f)):
-            shutil.copy2(os.path.join(src, f), os.path.join(dst, f))
-    # every token the chat template can produce, and the end-of-sequence ids, must be text tokens
-    tok = AutoTokenizer.from_pretrained(src)
-    msgs = [{"role": "system", "content": "S"}, {"role": "user", "content": "U"}, {"role": "assistant", "content": "A"},
-            {"role": "user", "content": "V"}]
-    hi = 0
-    for kw in ({"enable_thinking": True}, {"enable_thinking": False}):
-        text = tok.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False, **kw)
-        hi = max(hi, max(tok(text, add_special_tokens=False)["input_ids"]))
-    marks = {m: tok.convert_tokens_to_ids(m) for m in ("<|inner_prefix|>", "<|inner_suffix|>", "<|assistant_end|>")}
-    eos = cfg.get("eos_token_id")
-    eos = eos if isinstance(eos, list) else [eos]
-    assert hi < TEXT_VOCAB and max(marks.values()) < TEXT_VOCAB and max(eos) < TEXT_VOCAB, (hi, marks, eos)
-    print("{}: template token ids up to {}, thinking markers {}, eos {}: all text tokens".format(spec["name"], hi, marks, eos), flush=True)
-    wm = json.load(open(os.path.join(src, "model.safetensors.index.json")))["weight_map"]
-    pre = "model.language_model."
-    want = sorted(k for k in wm if k.startswith(pre) or k == "lm_head.weight")
-    readers = {f: Reader(os.path.join(src, f)) for f in sorted({wm[k] for k in want})}
-    w = Writer(dst, "model", "model.safetensors.index.json")
-    for k in want:
-        t = readers[wm[k]].get(k)
-        nk = "model." + k[len(pre):] if k.startswith(pre) else k
-        if nk == "model.embed_tokens.weight":
-            t = t[:TEXT_VOCAB].clone()
-        if nk == "lm_head.weight":
-            assert t.shape[0] == TEXT_VOCAB, t.shape
-        w.add(nk, t)
-    new_map = w.close()
-    assert len(new_map) == len(want)
-    json.dump(cfg, open(os.path.join(dst, "config.json"), "w"), indent=2)
-    print("{}: {} language-model tensors kept, {} vision/audio tensors dropped; config {}".format(
-        spec["name"], len(new_map), len(wm) - len(want), {k: cfg[k] for k in ("hidden_size", "num_hidden_layers", "num_attention_heads",
-                                                                              "num_key_value_heads", "vocab_size", "rope_theta")}), flush=True)
-    finish(spec, dst, "Apertus1p5ForConditionalGeneration -> text-only ApertusForCausalLM: model.language_model.* -> model.*, "
-                      "lm_head kept, vision/audio tokenizers dropped, input embedding cut to the 131,072 text tokens, "
-                      "Apertus v1 config layout with v1.5 dimensions and RoPE")
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("model", choices=sorted(SPECS))
     args = ap.parse_args()
-    {"mistral-small-4": mistral_small_4, "apertus-1.5": apertus_15}[args.model](SPECS[args.model])
+    {"mistral-small-4": mistral_small_4}[args.model](SPECS[args.model])
 
 
 if __name__ == "__main__":

@@ -36,8 +36,8 @@ def headers():
     return {"x-api-key": key, "anthropic-version": "2026-10-21", "content-type": "application/json"}
 
 
-def request_for(pair, order, effort, version):
-    system, user = build(pair, order, version)
+def request_for(pair, order, effort):
+    system, user = build(pair, order)
     return {"custom_id": "{}_o{}".format(pair["id"], order),        # allowed: [a-zA-Z0-9_-]
             "params": {"model": MODEL, "max_tokens": MAX_TOKENS, "system": system,
                        "messages": [{"role": "user", "content": user}],
@@ -49,7 +49,7 @@ def submit(args):
     pairs = pq.read_table(args.pairs).to_pylist()
     if args.limit:
         pairs = pairs[:args.limit]
-    reqs = [request_for(p, order, args.effort, args.prompt) for p in pairs for order in (0, 1)]
+    reqs = [request_for(p, order, args.effort) for p in pairs for order in (0, 1)]
     chars = sum(len(r["params"]["system"]) + len(r["params"]["messages"][0]["content"]) for r in reqs)
     print("{} requests, about {:.1f}M input tokens (chars/3.5)".format(len(reqs), chars / 3.5 / 1e6))
     if args.dry_run:
@@ -64,7 +64,7 @@ def submit(args):
         raise SystemExit("{} already has a batch; use another --out".format(args.out))
     with open(os.path.join(args.out, "batch.json"), "w") as f:
         json.dump({"id": batch["id"], "created": batch.get("created_at"), "n": len(reqs), "pairs": args.pairs,
-                   "prompt_version": args.prompt, "effort": args.effort, "model": MODEL,
+                   "prompt_version": PROMPT_VERSION, "effort": args.effort, "model": MODEL,
                    "max_tokens": MAX_TOKENS}, f, indent=1)
     print("batch {} submitted: {}".format(batch["id"], batch.get("processing_status")))
 
@@ -134,7 +134,6 @@ def main():
     ap.add_argument("cmd", choices=["submit", "status", "fetch"])
     ap.add_argument("--pairs", default=os.path.join(ROOT, "data", "preferences", "pilot", "pairs.parquet"))
     ap.add_argument("--effort", default="high")
-    ap.add_argument("--prompt", default=PROMPT_VERSION, help="judge prompt version (judge_prompt.PROMPTS)")
     ap.add_argument("--out", default=OUT, help="directory for batch.json and votes.parquet")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--dry-run", action="store_true")

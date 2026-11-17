@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Length bias of the judges: do longer answers win because they are longer?
 
-  collect-preferences/run.sh length_bias.py [--votes data/preferences/pilot/votes] [--opus data/preferences/pilot/opus/votes.parquet]
+  collect-preferences/run.sh length_bias.py [--votes data/preferences/pilot/v3/votes] [--opus data/preferences/pilot/v3/opus/votes.parquet]
                                             [--runs judge|prompt|thinking,...] [--pool run,run,run] [--examples N]
 
 Lengths are response characters. A "clean" pair has both answers >= 200 characters, neither cut by its length
@@ -46,10 +46,9 @@ PILOT = os.path.join(ROOT, "data", "preferences", "pilot")
 sys.path.insert(0, HERE)
 from judge_prompt import same_lang  # noqa: E402
 
-DEFAULT_RUNS = ["gemma-4-31B-it|v2|off", "gemma-4-31B-it|v2|on", "qwen3.5-27b|v2|off", "qwen3.5-27b|v2|on",
-                "qwen3.5-122b-a10b|v2|off", "gpt-oss-120b-bf16|v2|off", "glm-4.5-air|v2|off", "mistral-large-2411|v2|off",
-                "gemma-4-31B-it|v1|off", "qwen3.5-27b|v1|off", "gpt-oss-120b-bf16|v1|off"]
-DEFAULT_POOL = ["gemma-4-31B-it|v2|off", "qwen3.5-27b|v2|off", "gpt-oss-120b-bf16|v2|off"]
+DEFAULT_RUNS = ["gemma-4-31B-it|v3|on", "qwen3.8-27b|v3|on", "gpt-oss-120b-bf16|v3|on", "qwen3.5-122b-a10b|v3|on",
+                "mistral-small-4-119b|v3|on", "glm-4.5-air|v3|on"]
+DEFAULT_POOL = ["gemma-4-31B-it|v3|on", "qwen3.8-27b|v3|on", "gpt-oss-120b-bf16|v3|on"]
 BANDS = [(1.0, 1.2), (1.2, 1.5), (1.5, 2.0), (2.0, 4.0), (4.0, float("inf"))]
 LONG_KW = re.compile(r"more (comprehensive|detailed|thorough|complete|in-depth|extensive|elaborate|nuanced|depth)|"
                      r"comprehensive|thorough|in-depth|covers more|greater depth|more context|richer", re.I)
@@ -106,9 +105,9 @@ def fit(X, k, n, lam=0.05):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pairs", default=os.path.join(PILOT, "pairs.parquet"))
-    ap.add_argument("--votes", default=os.path.join(PILOT, "votes"), help="vote directories, comma-separated")
-    ap.add_argument("--opus", default=os.path.join(PILOT, "opus", "votes.parquet"))
-    ap.add_argument("--out", default=os.path.join(PILOT, "LENGTH_BIAS.txt"))
+    ap.add_argument("--votes", default=os.path.join(PILOT, "v3", "votes"), help="vote directories, comma-separated")
+    ap.add_argument("--opus", default=os.path.join(PILOT, "v3", "opus", "votes.parquet"))
+    ap.add_argument("--out", default=os.path.join(PILOT, "v3", "LENGTH_BIAS.txt"))
     ap.add_argument("--runs", default=",".join(DEFAULT_RUNS), help="runs (judge|prompt|thinking) to analyse")
     ap.add_argument("--pool", default=",".join(DEFAULT_POOL), help="runs whose votes form the pool")
     ap.add_argument("--examples", type=int, default=0, help="print N disputed clean pairs per direction with rationales")

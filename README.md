@@ -93,24 +93,22 @@ slices boosted), each candidate judging both presentation orders, with Claude Op
 (evaluation only, never a training label), settled the prompt, the decoding (thinking on with the vendor's
 sampling; greedy decoding made the reasoning models loop) and the judges. The final round:
 
-| Judge | Mode | Consistency | Agreement with Opus | Twice-as-long answer wins (en) | Node-hours per 1k pairs |
-|---|---|---|---|---|---|
-| Gemma 4 31B | thinking | 93.9% | 94.7% | 49% | 0.50 |
-| Qwen3.8-27B | thinking, effort xhigh | 91.3% | 95.7% | 40% | 0.91 |
-| gpt-oss-120b | reasoning high | 88.1% | 93.2% | 41% | 0.49 |
-| gpt-oss-120b | reasoning medium | 86.8% | 90.2% | 41% | 0.21 |
-| Qwen3.5-122B-A10B | thinking | 89.8% | 94.8% | 47% | 1.03 |
-| Qwen3.5-27B | thinking | 90.0% | 94.8% | 52% | 0.58 |
-| Command A+ 05-2026 | thinking (stopped after 103 pairs) | 96.1% | 94.5% | – | ≈2.2 |
-| Mistral Small 4 119B | reasoning high | 84.2% | 89.4% | 51% | 0.87 |
-| Mistral Large 2411 | no thinking mode, greedy | 84.8% | 89.6% | 50% | 0.84 |
-| GLM-4.5-Air | thinking | 86.6% | 88.0% | 55% | 0.65 |
-| Apertus 1.5 70B | thinking | 82.6% | 83.3% | 60% | 1.21 |
-| Claude Opus 5.5 (reference) | adaptive thinking, effort high | 95.3% | – | 43% | – |
+| Judge | Mode | Agreement with Opus |
+|---|---|---|
+| Gemma 4 31B | thinking | 94.7% |
+| Qwen3.8-27B | thinking, effort xhigh | 95.7% |
+| gpt-oss-120b | reasoning high | 93.2% |
+| gpt-oss-120b | reasoning medium | 90.2% |
+| Qwen3.5-122B-A10B | thinking | 94.8% |
+| Qwen3.5-27B | thinking | 94.8% |
+| Command A+ 05-2026 | thinking (stopped after 103 pairs) | 94.5% |
+| Mistral Small 4 119B | reasoning high | 89.4% |
+| Mistral Large 2411 | no thinking mode, greedy | 89.6% |
+| GLM-4.5-Air | thinking | 88.0% |
+| Apertus 1.5 70B | thinking | 83.3% |
 
-Consistency: the same winner in both presentation orders. Agreement: with Opus, on the pairs where both are
-consistent. Twice-as-long: the implied win rate of an answer twice as long as an equally good one, on clean
-English pairs (one standard error about 4 points). Node-hours: one LUMI-G node of 8 MI250X GCDs.
+Agreement: with Claude Opus 5.5 (adaptive thinking, effort high), on the pairs where both give the same winner
+in both presentation orders.
 
 **The pool** is Gemma 4 31B, Qwen3.8-27B and gpt-oss-120b at reasoning high: the best agreement per node-hour,
 from three model families, so that most pairs can have all three. A judge never grades an answer from its own
@@ -147,6 +145,11 @@ benefit from it.
 
 ![](figures/model_win_rates.png)
 *Win rate per responder (the label mass its answers receive), with the thinking / direct split.*
+
+![](figures/elo.png)
+*The same on an Elo scale, which adjusts for whom each model was paired with: Bradley–Terry ratings fitted to
+the labels as LMArena computes them (mean 1000; 100 points more means winning about 64% of the games against
+that opponent), with 95% bootstrap intervals.*
 
 ![](figures/length.png)
 *Answer length per model, and the label mass of the longer answer by length ratio.*

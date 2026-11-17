@@ -1,0 +1,45 @@
+# Target languages for the compiled prompt set.
+# code: canonical code used in the compiled dataset (ISO 639-1 where it exists)
+# aliases: other codes from the requested list that denote the same language
+#          (lv/lvs, et/ekk, sq/als are the same language in ISO 639-1 vs the
+#          ISO 639-3 / OpenLID codes that HPLT uses)
+# hplt: HPLT 3.0 / OpenLID-2.0 label used for the frequency
+code	aliases	hplt	name
+en		eng_Latn	English
+es		spa_Latn	Spanish
+ka		kat_Geor	Georgian
+fr		fra_Latn	French
+de		deu_Latn	German
+pt		por_Latn	Portuguese
+it		ita_Latn	Italian
+pl		pol_Latn	Polish
+el		ell_Grek	Greek
+nl		nld_Latn	Dutch
+tr		tur_Latn	Turkish
+ro		ron_Latn	Romanian
+hu		hun_Latn	Hungarian
+uk		ukr_Cyrl	Ukrainian
+cs		ces_Latn	Czech
+sv		swe_Latn	Swedish
+bg		bul_Cyrl	Bulgarian
+fi		fin_Latn	Finnish
+ca		cat_Latn	Catalan
+hr		hrv_Latn	Croatian
+sk		slk_Latn	Slovak
+da		dan_Latn	Danish
+lt		lit_Latn	Lithuanian
+bs		bos_Latn	Bosnian
+sl		slv_Latn	Slovenian
+nb		nob_Latn	Norwegian Bokmål
+sr		srp_Cyrl	Serbian (Cyrillic)
+sq	als	als_Latn	Albanian
+lv	lvs	lvs_Latn	Latvian
+mk		mkd_Cyrl	Macedonian
+is		isl_Latn	Icelandic
+mt		mlt_Latn	Maltese
+gl		glg_Latn	Galician
+eu		eus_Latn	Basque
+et	ekk	ekk_Latn	Estonian
+ga		gle_Latn	Irish
+nn		nno_Latn	Norwegian Nynorsk
+ltg		ltg_Latn	Latgalian

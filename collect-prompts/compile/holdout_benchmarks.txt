@@ -1,0 +1,37 @@
+# Hold-out benchmarks: every candidate prompt close to one of these (any
+# language) is removed before allocation. Format as datasets.txt.
+# --- reward-model benchmarks
+allenai/reward-bench                          rm_bench
+allenai/reward-bench-2                        rm_bench
+CohereLabsCommunity/multilingual-reward-bench rm_bench
+prometheus-eval/MM-Eval                       rm_bench
+THU-KEG/RM-Bench                              rm_bench
+ScalerLab/JudgeBench                          rm_bench
+# --- chat / judge benchmarks
+lmarena-ai/arena-hard-auto                    chat_bench  data/arena-hard-v0.1/question.jsonl,data/arena-hard-v2.0/question.jsonl
+CohereLabs/m-ArenaHard-v2.0                   chat_bench
+CohereLabs/m-ArenaHard                        chat_bench
+openeurollm/ArenaHard-EU-v0                   chat_bench
+allenai/WildBench                             chat_bench
+HuggingFaceH4/mt_bench_prompts                chat_bench
+LumiOpen/mtbench_multi                        chat_bench
+tatsu-lab/alpaca_eval                         chat_bench
+LumiOpen/alpaca_eval_multi                    chat_bench
+VAGOsolutions/MT-Bench-TrueGerman             chat_bench
+bofenghuang/mt-bench-french                   chat_bench
+ilsp/mt-bench-greek                           chat_bench
+# --- instruction following
+google/IFEval                                 if_bench
+Telefonica/European-IFEval                    if_bench
+danish-foundation-models/multi-ifeval         if_bench
+facebook/Multi-IF                             if_bench
+allenai/IFBench_test                          if_bench
+Ayush-Singh/Euro-IFBench                      if_bench    data/euro_ifbench/*.jsonl
+# --- safety
+walledai/XSTest                               safety_bench
+LibrAI/do-not-answer                          safety_bench
+walledai/HarmBench                            safety_bench
+walledai/AdvBench                             safety_bench
+Bertievidgen/SimpleSafetyTests                safety_bench
+felfri/M-ALERT                                safety_bench
+ToxicityPrompts/PolyGuardPrompts              safety_bench

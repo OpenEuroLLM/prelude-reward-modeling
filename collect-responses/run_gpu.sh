@@ -1,0 +1,1 @@
+../collect-prompts/run_gpu.sh

@@ -1,0 +1,40 @@
+# quotas for total=128000 measure=documents (sqrt of HPLT 3.0 frequency)
+code	hplt	name	frequency	share	quota
+en	eng_Latn	English	1.80578e+10	0.30953	39620
+es	spa_Latn	Spanish	7.2558e+08	0.06205	7942
+de	deu_Latn	German	6.45363e+08	0.05852	7490
+fr	fra_Latn	French	6.03879e+08	0.05660	7245
+it	ita_Latn	Italian	3.62986e+08	0.04388	5617
+pt	por_Latn	Portuguese	3.42528e+08	0.04263	5457
+pl	pol_Latn	Polish	2.55893e+08	0.03684	4716
+nl	nld_Latn	Dutch	2.00689e+08	0.03263	4177
+tr	tur_Latn	Turkish	1.59467e+08	0.02909	3723
+cs	ces_Latn	Czech	1.07802e+08	0.02391	3061
+sv	swe_Latn	Swedish	9.77174e+07	0.02277	2914
+ro	ron_Latn	Romanian	9.59119e+07	0.02255	2887
+el	ell_Grek	Greek	8.73908e+07	0.02153	2756
+uk	ukr_Cyrl	Ukrainian	8.00269e+07	0.02061	2638
+hu	hun_Latn	Hungarian	7.51229e+07	0.01996	2555
+da	dan_Latn	Danish	5.24988e+07	0.01669	2136
+fi	fin_Latn	Finnish	4.95581e+07	0.01622	2076
+bg	bul_Cyrl	Bulgarian	4.29679e+07	0.01510	1933
+bs	bos_Latn	Bosnian	3.70783e+07	0.01402	1795
+nb	nob_Latn	Norwegian Bokmål	3.64871e+07	0.01391	1781
+sk	slk_Latn	Slovak	3.63708e+07	0.01389	1778
+hr	hrv_Latn	Croatian	3.11567e+07	0.01286	1646
+ca	cat_Latn	Catalan	2.64118e+07	0.01184	1515
+lt	lit_Latn	Lithuanian	2.04068e+07	0.01041	1332
+sl	slv_Latn	Slovenian	1.68121e+07	0.00945	1209
+et	ekk_Latn	Estonian	1.37359e+07	0.00854	1093
+lv	lvs_Latn	Latvian	1.13234e+07	0.00775	992
+sq	als_Latn	Albanian	1.11847e+07	0.00770	986
+sr	srp_Cyrl	Serbian (Cyrillic)	7.08171e+06	0.00613	785
+mk	mkd_Cyrl	Macedonian	6.79145e+06	0.00600	768
+ka	kat_Geor	Georgian	6.12929e+06	0.00570	730
+is	isl_Latn	Icelandic	4.29593e+06	0.00477	611
+gl	glg_Latn	Galician	4.03327e+06	0.00462	592
+eu	eus_Latn	Basque	3.21948e+06	0.00413	529
+nn	nno_Latn	Norwegian Nynorsk	1.50966e+06	0.00283	362
+ga	gle_Latn	Irish	786690	0.00205	262
+mt	mlt_Latn	Maltese	752735	0.00200	256
+ltg	ltg_Latn	Latgalian	14140	0.00027	35

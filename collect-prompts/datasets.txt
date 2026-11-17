@@ -1,0 +1,62 @@
+# Candidate prompt sources (HF dataset IDs), from
+# reports/Prompt sources for multilingual reward modeling.md (tiers 1 and 2).
+# Format: <hf_dataset_id>  <category>  [include-globs, comma-separated]
+# Without include-globs the whole repo is downloaded.
+# Lines starting with '#' are ignored.
+
+# --- Real-user chat logs ---
+ministere-culture/comparia-conversations      real_user
+ministere-culture/comparia-votes              real_user
+ministere-culture/comparia-reactions          real_user
+ministere-culture/comparia-fr-arena           real_user
+allenai/WildChat-4.8M                         real_user
+allenai/WildChat-1M                           real_user
+lmarena-ai/arena-human-preference-140k        real_user
+lmarena-ai/arena-human-preference-100k        real_user
+lmsys/lmsys-chat-1m                           real_user
+danish-foundation-models/ai-arenaen           real_user
+
+# --- Human-written (non-organic) ---
+OpenAssistant/oasst2                          human_written
+facebook/community-alignment-dataset          human_written
+CohereLabs/aya_dataset                        human_written
+AnnikaSimonsen/TrustLLM-reformulation-prompts human_written
+pelcra/PLLuMIC                                human_written
+NASK-PIB/PLLuM-Align                          human_written
+ctu-aic/questions_ujc_cas_cs                  human_written
+projecte-aina/MentorES                        human_written
+
+# --- English preference cores / prompt pools ---
+nvidia/HelpSteer3                             preference
+nvidia/Nemotron-Cascade-RM-Training           preference
+nvidia/Nemotron-Cascade-RL-RLHF               preference
+allenai/tulu-3-wildchat-unused                prompt_pool
+allenai/Dolci-Instruct-SFT                    prompt_pool
+
+# --- Instruction following ---
+allenai/IF_multi_constraints_upto5            instruction_following
+nvidia/Nemotron-RL-instruction_following      instruction_following
+allenai/tulu-3-sft-personas-instruction-following instruction_following
+openeurollm/EU-Instruct-Following-Synthetic   instruction_following
+LumiOpen/AutoIF-FI                            instruction_following
+
+# --- Safety ---
+allenai/wildjailbreak                         safety
+allenai/wildguardmix                          safety
+nvidia/Nemotron-Safety-Guard-Dataset-v3       safety
+ToxicityPrompts/PolyGuardMix                  safety
+NASK-PIB/RefusEU                              safety
+CohereLabs/aya_redteaming                     safety
+bench-llm/or-bench                            safety
+allenai/coconot                               safety
+nvidia/Aegis-AI-Content-Safety-Dataset-2.0    safety
+BSC-LT/ALIA-2606-DPO-safety                   safety
+
+# --- Multilingual synthetic / translated ---
+openeurollm/EuroMultiSynth-Instruct           multilingual_synthetic
+akoksal/muri-it                               multilingual_synthetic
+lang-uk/every_prompt                          multilingual_web
+BSC-LT/ALIA-2606-SFT                          multilingual_synthetic
+BSC-LT/ALIA-2606-DPO-helpfulness              multilingual_synthetic
+nvidia/Nemotron-Post-Training-Dataset-v2      multilingual_synthetic  data/multilingual_de*,data/multilingual_fr*,data/multilingual_it*,data/multilingual_es*,data/chat*
+ltg/normistral-11b-thinking-training          multilingual_translated

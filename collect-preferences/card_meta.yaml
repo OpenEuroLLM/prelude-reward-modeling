@@ -1,0 +1,111 @@
+# Front matter of the Hugging Face dataset card (DATASET_CARD.md, built from README.md by build_card.py and
+# uploaded as the repo's README.md by upload_hf.py). Hub metadata only; the text comes from README.md.
+pretty_name: Prelude reward modelling
+license: apache-2.0
+language:
+- en
+- es
+- de
+- fr
+- it
+- pt
+- pl
+- nl
+- tr
+- cs
+- sv
+- ro
+- el
+- uk
+- hu
+- da
+- fi
+- bg
+- bs
+- nb
+- sk
+- hr
+- ca
+- lt
+- sl
+- et
+- lv
+- sq
+- sr
+- mk
+- ka
+- is
+- gl
+- eu
+- nn
+- ga
+- mt
+- ltg
+multilinguality:
+- multilingual
+task_categories:
+- text-generation
+tags:
+- preference
+- reward-model
+- rlhf
+- rlaif
+- llm-as-a-judge
+- european-languages
+annotations_creators:
+- machine-generated
+language_creators:
+- found
+- machine-generated
+size_categories:
+- 100K<n<1M
+source_datasets:
+- openeurollm/EuroMultiSynth-Instruct
+- allenai/WildChat-4.8M
+- lang-uk/every_prompt
+- lmarena-ai/arena-human-preference-140k
+- allenai/Dolci-Instruct-SFT
+- ToxicityPrompts/PolyGuardMix
+- BSC-LT/ALIA-2606-SFT
+- lmarena-ai/arena-human-preference-100k
+- openeurollm/EU-Instruct-Following-Synthetic
+- OpenAssistant/oasst2
+- allenai/tulu-3-wildchat-unused
+- ministere-culture/comparia-conversations
+- ministere-culture/comparia-fr-arena
+- nvidia/HelpSteer3
+- allenai/WildChat-1M
+- nvidia/Nemotron-Post-Training-Dataset-v2
+- nvidia/Nemotron-Cascade-RM-Training
+- facebook/community-alignment-dataset
+- allenai/wildjailbreak
+- allenai/tulu-3-sft-personas-instruction-following
+- allenai/IF_multi_constraints_upto5
+- ministere-culture/comparia-votes
+- BSC-LT/ALIA-2606-DPO-helpfulness
+- AnnikaSimonsen/TrustLLM-reformulation-prompts
+- nvidia/Nemotron-RL-instruction_following
+- CohereLabs/aya_dataset
+- bench-llm/or-bench
+- nvidia/Nemotron-Safety-Guard-Dataset-v3
+- BSC-LT/ALIA-2606-DPO-safety
+- ministere-culture/comparia-reactions
+- NASK-PIB/RefusEU
+- ltg/normistral-11b-thinking-training
+- CohereLabs/aya_redteaming
+- allenai/wildguardmix
+- danish-foundation-models/ai-arenaen
+- nvidia/Nemotron-Cascade-RL-RLHF
+- projecte-aina/MentorES
+- NASK-PIB/PLLuM-Align
+- pelcra/PLLuMIC
+- ctu-aic/questions_ujc_cas_cs
+- allenai/coconot
+- LumiOpen/AutoIF-FI
+- nvidia/Aegis-AI-Content-Safety-Dataset-2.0
+configs:
+- config_name: preferences
+  default: true
+  data_files: preferences.jsonl
+- config_name: prompts
+  data_files: prompts.jsonl

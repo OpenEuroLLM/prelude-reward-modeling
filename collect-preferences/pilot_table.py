@@ -4,7 +4,8 @@
   collect-preferences/run.sh pilot_table.py [--round v1v2|v3]
 
 Quality, with analyze_pilot.py's definitions: position consistency (both orders give the same winner) and
-agreement with Opus on pairs where both are consistent; a pair with a single valid verdict counts as that verdict.
+agreement with Opus on the pairs where Opus is consistent, each of the judge's two calls scoring 1 if it matches,
+0 if not and 1/2 without a verdict (so a pair the judge is inconsistent on scores 1/2).
 No verdict: calls that ended without a parseable verdict (length limit, broken JSON, prompt too long for the
 context). Length: win rate of an answer twice as long as an equal one between equal responders, from
 length_bias.py's Bradley-Terry fit on clean English pairs (50% = neutral; one standard error is about 4 points).
@@ -31,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PILOT = os.path.join(ROOT, "data", "preferences", "pilot")
 sys.path.insert(0, HERE)
-from analyze_pilot import agreement, load_votes, preference  # noqa: E402
+from analyze_pilot import agreement, load_votes, preference, soft_p  # noqa: E402
 from judge_prompt import same_lang  # noqa: E402
 from length_bias import fit  # noqa: E402
 
@@ -81,6 +82,11 @@ RUNS_V3 = [
     ("gpt-oss-120b-bf16|v3|off", "gpt-oss-120b", "v3, reasoning medium", 8, "pilot-gpt-oss-120b-bf16-v3-off-*.w*.log"),
     ("glm-4.5-air|v3|on", "GLM-4.5-Air", "v3, thinking on", 8, "pilot-glm-4.5-air-v3-on-*.w*.log"),
     ("mistral-large-2411|v3|off", "Mistral Large 2411", "v3 (no thinking mode)", 8, "pilot-mistral-large-2411-v3-off-*.w*.log"),
+    # judge.py --no-thinking ablation (2026-11-23), votes in v3/votes_nothink/
+    ("gemma-4-31B-it|v3|off", "Gemma 4 31B", "v3, thinking off", 2, "pilot-gemma-4-31B-it-nothink-*.w*.log"),
+    ("qwen3.8-27b|v3|off", "Qwen3.8-27B", "v3, thinking off", 2, "pilot-qwen3.8-27b-nothink-*.w*.log"),
+    ("qwen3.5-122b-a10b|v3|off", "Qwen3.5-122B", "v3, thinking off", 8, "pilot-qwen3.5-122b-a10b-nothink-*.w*.log"),
+    ("gpt-oss-120b-bf16|v3|low", "gpt-oss-120b", "v3, reasoning low", 8, "pilot-gpt-oss-120b-bf16-nothink-*.w*.log"),
 ]
 LOGS = os.path.join(ROOT, "data", "logs")
 DONE_RE = re.compile(r"(\d+) new in (\d+)s")
@@ -110,6 +116,8 @@ def main():
     base = os.path.join(PILOT, "v3") if v3 else PILOT
     pairs = {p["id"]: p for p in pq.read_table(os.path.join(PILOT, "pairs.parquet" if v3 else "pairs.before_continuation.parquet")).to_pylist()}
     runs = load_votes(os.path.join(base, "votes", "*.parquet"))
+    if v3:
+        runs.update(load_votes(os.path.join(base, "votes_nothink", "*.parquet")))
     if not v3:
         for run, d in load_votes(os.path.join(PILOT, "votes_rendered", "*.parquet")).items():
             runs[run + "@rendered"] = d
@@ -153,7 +161,8 @@ def main():
         toks = sum(r.get("completion_tokens") or 0 for r in calls) / len(calls)
         decided = [i for i in pr if pr[i][0] is not None]
         cons = sum(pr[i][0] in ("x", "y") for i in decided) / len(decided)
-        same, n = agreement(pr, ref, list(pairs)) if run != opus_run else (0, 0)
+        same, n = agreement({i: soft_p(r) for i, r in d.items()}, {i: soft_p(r) for i, r in runs[opus_run].items()},
+                            list(pairs), ref=True) if run != opus_run else (0, 0)
         retried = sum((r.get("attempt") or 0) > 0 for r in calls)
         return dict(calls=len(calls), fail=fail / len(calls), retried=retried / len(calls), toks=toks, cons=cons,
                     agr=same / n if n else None, n=n,

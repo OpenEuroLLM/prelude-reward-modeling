@@ -29,6 +29,9 @@
 #                   GLM-4.5 card gives none; Mistral Small 4's card). Never greedy for a model that reasons:
 #                   the first pilot runs were greedy, and a third of their calls without a verdict were
 #                   repetition loops. judge.py seeds every call from (pair, order, attempt).
+#   no_thinking     for the judge.py --no-thinking ablation only (the labels always use `thinking`): label (in file
+#                   names and vote rows), the switch and the vendor's decoding for that mode. gpt-oss cannot turn its
+#                   reasoning off; its lowest effort is `low`.
 #   vllm            extra engine arguments.
 #   env             environment variables judge.py sets before vLLM starts (e.g. allocator settings).
 judges:
@@ -44,6 +47,7 @@ judges:
     max_model_len: 65536
     thinking: {enable_thinking: true}
     sampling: {temperature: 1.0, top_p: 0.95, top_k: 64}
+    no_thinking: {label: "off", thinking: {enable_thinking: false}, sampling: {temperature: 1.0, top_p: 0.95, top_k: 64}}
     vllm: {limit_mm_per_prompt: {image: 0, audio: 0}}
     note: >-
       pool judge. MMMLU 88.4, 140+ languages; Gemma 3 27B was the best open MQM translation judge. Pilot
@@ -62,6 +66,11 @@ judges:
     max_model_len: 65536
     thinking: {enable_thinking: true}
     sampling: {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 0.0}
+    no_thinking: {label: "off", thinking: {enable_thinking: false},
+                  sampling: {temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0.0, presence_penalty: 1.5}}
+    # no_thinking pilot (2026-11-23): 9.6% of the answers were invalid JSON (a missing comma between fields) and
+    # 1.9% closed the object before the verdict; the other judges 0-2.6%. Probably the presence penalty on the
+    # repeated JSON punctuation; the card's setting is kept.
     vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
     note: >-
       pool judge. Aug 2026 successor of Qwen3.5-27B with the same architecture; the best agreement with
@@ -85,6 +94,7 @@ judges:
     max_model_len: 65536
     thinking: {reasoning_effort: high}
     sampling: {temperature: 1.0, top_p: 1.0}
+    no_thinking: {label: low, thinking: {reasoning_effort: low}, sampling: {temperature: 1.0, top_p: 1.0}}
     note: >-
       pool judge, on every pair (no responder of its family). bf16 re-upload of openai/gpt-oss-120b, since
       the native MXFP4 kernels are not available on gfx90a. Pilot (round 3): 93.2% agreement with Opus at
@@ -104,6 +114,8 @@ judges:
     max_model_len: 65536
     thinking: {enable_thinking: true}
     sampling: {temperature: 1.0, top_p: 0.95, top_k: 20, min_p: 0.0, presence_penalty: 1.5}
+    no_thinking: {label: "off", thinking: {enable_thinking: false},
+                  sampling: {temperature: 0.7, top_p: 0.8, top_k: 20, min_p: 0.0, presence_penalty: 1.5}}
     vllm: {limit_mm_per_prompt: {image: 0, video: 0}}
     note: >-
       first substitute (in place of Gemma on pairs with a Gemma 4 12B answer) and first tie-breaker.

@@ -1,0 +1,4 @@
+#!/bin/bash
+# nodes: 1
+# Qwen3.8-27B, LoRA r64 on all linear layers, full training set
+exec bash train-reward-model/slurm/managed.sh --model qwen3.8-27b --run q27-full-lora64-lr2e-5 --loss soft --center 0.01 --lora 64 --lora-alpha 64 --lr 2e-5 --eval-every 200 --ckpt-every 100 --resume --save --score /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/rb2.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/rmbench.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/mrb.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/mrb_small.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/probes.parquet

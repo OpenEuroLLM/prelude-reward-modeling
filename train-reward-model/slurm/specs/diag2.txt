@@ -1,0 +1,1 @@
+2 @train-reward-model/slurm/diag2.sh

@@ -1,0 +1,5 @@
+# Checkpoint / resume / STOP / time-limit tests (dev-g, 7 nodes, 50 min)
+4 @train-reward-model/slurm/test_ckpt.sh stop gemma-4-31B-it --loss soft --center 0.01 --lr 2e-6 --freeze-embed --freeze-norms --max-steps 8
+1 @train-reward-model/slurm/test_ckpt.sh time qwen3.8-27b --loss soft --center 0.01 --lora 64 --lora-alpha 64 --lr 2e-5 --max-steps 6
+1 @train-reward-model/slurm/test_ckpt.sh stop prelude-threeway-dpo --loss soft --center 0.01 --lr 5e-6 --max-steps 8 --save --score /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/probes.parquet
+1 @train-reward-model/slurm/test_ckpt.sh ref prelude-threeway-dpo --loss soft --center 0.01 --lr 5e-6 --max-steps 8

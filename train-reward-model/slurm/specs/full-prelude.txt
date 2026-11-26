@@ -1,0 +1,5 @@
+# Full training set (126,918 pairs, 1 epoch, 991 steps of 128 pairs), Prelude 9B (threeway-dpo), two learning rates, 1 node each.
+# Job: sbatch -p standard-g -N 2 -t 20:00:00
+# Lines are per-run launchers (slurm/runs/<run>.sh -> managed.sh): runs resume from their checkpoints, move between jobs (dev-g chunks hand over to this job) and are skipped once done.
+1 @train-reward-model/slurm/runs/p9-full-soft-lr5e-6.sh
+1 @train-reward-model/slurm/runs/p9-full-soft-lr3e-6.sh

@@ -1,0 +1,4 @@
+#!/bin/bash
+# nodes: 2
+# Qwen3.8-27B, full fine-tuning, full training set
+exec bash train-reward-model/slurm/managed.sh --model qwen3.8-27b --run q27-full-soft-lr2e-6 --loss soft --center 0.01 --lr 2e-6 --eval-every 200 --ckpt-every 50 --profile-step 3 --resume --save --score /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/rb2.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/rmbench.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/mrb.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/mrb_small.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/qwen3.8-27b/probes.parquet

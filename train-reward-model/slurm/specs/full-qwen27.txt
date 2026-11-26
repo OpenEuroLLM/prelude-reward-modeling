@@ -1,0 +1,4 @@
+# Full training set, Qwen3.8-27B, full fine-tuning, 2 nodes (4 nodes are only ~1.15x faster: a step waits for the
+# rank with the longest sequence). Job: -p standard-g -N 2 -t 20:00:00 (flash-linear-attention kernels)
+# Lines are per-run launchers (slurm/runs/<run>.sh -> managed.sh): runs resume from their checkpoints, move between jobs (dev-g chunks hand over to this job) and are skipped once done.
+2 @train-reward-model/slurm/runs/q27-full-soft-lr2e-6.sh

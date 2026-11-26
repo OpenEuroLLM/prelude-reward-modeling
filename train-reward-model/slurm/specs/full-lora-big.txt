@@ -1,0 +1,4 @@
+# Full training set, LoRA r64 (all linear layers), 1 node each: Gemma 4 31B and Qwen3.8-27B. Job: -p standard-g -N 2 -t 48:00:00
+# Lines are per-run launchers (slurm/runs/<run>.sh -> managed.sh): runs resume from their checkpoints, move between jobs (dev-g chunks hand over to this job) and are skipped once done.
+1 @train-reward-model/slurm/runs/g31-full-lora64-lr2e-5.sh
+1 @train-reward-model/slurm/runs/q27-full-lora64-lr2e-5.sh

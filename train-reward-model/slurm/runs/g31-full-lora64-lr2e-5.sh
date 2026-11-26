@@ -1,0 +1,4 @@
+#!/bin/bash
+# nodes: 1
+# Gemma 4 31B, LoRA r64 on all linear layers, full training set
+exec bash train-reward-model/slurm/managed.sh --model gemma-4-31B-it --run g31-full-lora64-lr2e-5 --loss soft --center 0.01 --lora 64 --lora-alpha 64 --lr 2e-5 --eval-every 200 --ckpt-every 100 --resume --save --score /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/gemma-4-31B-it/rb2.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/gemma-4-31B-it/rmbench.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/gemma-4-31B-it/mrb.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/gemma-4-31B-it/mrb_small.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/gemma-4-31B-it/probes.parquet

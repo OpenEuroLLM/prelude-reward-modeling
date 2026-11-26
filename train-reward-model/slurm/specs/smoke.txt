@@ -1,0 +1,4 @@
+# smoke tests: pipeline, kernels, multi-node FSDP; a few steps each, then a validation pass
+1 --model prelude-threeway-dpo --run smoke-prelude --batch 32 --max-steps 8 --eval-first --lr 2e-6
+2 --model gemma-4-31B-it --run smoke-gemma31 --batch 32 --max-steps 4 --lr 1e-6
+2 --model qwen3.8-27b --run smoke-qwen27 --batch 32 --max-steps 4 --lr 1e-6

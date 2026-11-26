@@ -3,7 +3,7 @@
 verdict, JSON output.
 
   collect-preferences/run_gpu.sh judge.py --judge qwen3.5-27b --pairs data/preferences/pilot/pairs.parquet \
-      --out data/preferences/pilot/v3/votes [--shard 0/4] [--tp 2] [--limit N]
+      --out data/preferences/pilot/v3/votes [--shard 0/4] [--tp 2] [--limit N] [--no-thinking]
 
 One process per engine replica; `--shard i/n` takes every n-th pair so that several replicas (e.g. four TP=2
 replicas on a node) share the work. Writes <out>/<judge>__<prompt_version>__<thinking>__<shard>.parquet with
@@ -19,6 +19,8 @@ effort for gpt-oss and Mistral Small 4) and with the vendor's recommended decodi
 never greedy for a model that reasons, with a seed per call derived from (pair, order, attempt). A call that
 gives no verdict, almost always a reasoning that ran out of budget, is retried once with a new seed and twice
 the budget (capped by the context); the row records the attempt and the first attempt's status.
+`--no-thinking` is an ablation, never used for the labels: the judge's judges.yaml `no_thinking` switch and
+decoding (thinking off; gpt-oss at its lowest effort, `low`), with that label in the file name and vote rows.
 
 Requests stream through vLLM's engine (continuous batching, so one long call does not hold up a batch).
 Finished calls are written every 200 calls or 5 minutes and on SIGTERM; a rerun with the same arguments skips
@@ -103,12 +105,12 @@ def final_text(text, judge):
     return text
 
 
-def parse(raw, judge, finish=None):
+def parse(raw, judge, finish=None, thinking="on"):
     """-> (status, obj, verdict). ok: the answer parsed as JSON; ok_regex: no valid JSON but a single verdict
     letter in the answer part; parse_error: nothing usable (e.g. cut off inside the reasoning)"""
     if judge["family"] == "openai" and not FINAL_RE.search(raw):
         return "parse_error", None, None                  # never reached its final channel
-    end = THINK_END.get(judge["family"])
+    end = THINK_END.get(judge["family"]) if thinking == "on" else None    # no end-of-reasoning marker expected
     open_reasoning = (end is not None and end not in raw) or ("<think>" in raw and "</think>" not in raw)
     if open_reasoning and finish == "length":
         return "parse_error", None, None                  # cut off inside the reasoning: any JSON there is a draft
@@ -184,13 +186,19 @@ def main():
     ap.add_argument("--skip-own-family", action="store_true",
                     help="leave out the pairs with an answer from the judge's family (families.py), before sharding")
     ap.add_argument("--dry-run", action="store_true", help="print what would be judged, then exit without loading the model")
+    ap.add_argument("--no-thinking", action="store_true",
+                    help="ablation: the judge's judges.yaml no_thinking switch and decoding (labelled in file names and rows)")
     ap.add_argument("--reparse", action="store_true",
                     help="re-extract the verdicts from the stored raw outputs of the existing output file, then exit")
     args = ap.parse_args()
     args.pairs, args.out = os.path.join(ROOT, args.pairs), os.path.join(ROOT, args.out)   # relative to the repo root
     judge = load_judge(args.judge)
-    thinking = "on"                          # every judge runs with its thinking mode on (in file names and vote rows)
-    sampling = judge["sampling"]
+    mode = judge.get("no_thinking") if args.no_thinking else {"label": "on", "thinking": judge.get("thinking"),
+                                                             "sampling": judge["sampling"]}
+    if mode is None:
+        raise SystemExit("{} has no no_thinking settings in judges.yaml".format(args.judge))
+    thinking = mode["label"]                 # "on" for the labels; the ablation's label otherwise (file names, vote rows)
+    sampling = mode["sampling"]
     i_shard, n_shard = (int(x) for x in args.shard.split("/"))
 
     pairs = pq.read_table(args.pairs).to_pylist()
@@ -213,7 +221,7 @@ def main():
         for r in rows:
             if r["status"] == "too_long" or not r.get("raw"):
                 continue
-            status, obj, verdict = parse(r["raw"], judge, r.get("finish_reason"))
+            status, obj, verdict = parse(r["raw"], judge, r.get("finish_reason"), "on" if r.get("thinking") == "on" else "off")
             r.update(status=status, verdict=verdict, request=field(obj, "request"), response_a=field(obj, "response_a"),
                      response_b=field(obj, "response_b"), comparison=field(obj, "comparison"), prefers=prefers(verdict, r["order"]))
         write(rows, out_path)
@@ -258,7 +266,7 @@ def main():
     engine = llm.llm_engine
     print("{} loaded in {:.0f}s".format(judge["name"], time.time() - t0), flush=True)
 
-    thinking_kwargs = judge.get("thinking") or {}
+    thinking_kwargs = mode["thinking"] or {}
     # Prompts are rendered here with the HF tokenizer (chat template plus the thinking switch) and sent as token
     # ids: the switch is applied verbatim and visible in the log (the first prompt's head and tail are printed),
     # and a prompt that leaves no room for the answer becomes a too_long row rather than a crash. The response
@@ -336,7 +344,7 @@ def main():
             base, msgs, ids, attempt, first, seed, mt = inflight.pop(rid)
             c = o.outputs[0]
             n_tok += len(c.token_ids)
-            status, obj, verdict = parse(c.text, judge, c.finish_reason)
+            status, obj, verdict = parse(c.text, judge, c.finish_reason, "on" if thinking == "on" else "off")
             if verdict is None and attempt == 0 and not args.no_retry:
                 pending.appendleft((base, msgs, ids, 1, (status, len(c.token_ids))))
                 stats["retried"] += 1

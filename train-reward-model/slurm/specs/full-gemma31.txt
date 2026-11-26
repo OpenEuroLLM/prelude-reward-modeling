@@ -1,0 +1,3 @@
+# Full training set, Gemma 4 31B, full fine-tuning (embeddings and RMSNorm weights frozen), 4 nodes. Job: -p standard-g -N 4 -t 24:00:00
+# Lines are per-run launchers (slurm/runs/<run>.sh -> managed.sh): runs resume from their checkpoints, move between jobs (dev-g chunks hand over to this job) and are skipped once done.
+4 @train-reward-model/slurm/runs/g31-full-soft-lr2e-6.sh

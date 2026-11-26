@@ -56,11 +56,22 @@ def pct(a, b):
     return "{:5.1f}%".format(100.0 * a / b) if b else "    - "
 
 
-def agreement(pref_a, pref_b, ids):
-    """hard agreement on pairs where both are consistent, and its coverage"""
-    both = [i for i in ids if pref_a.get(i, (None,))[0] in ("x", "y") and pref_b.get(i, (None,))[0] in ("x", "y")]
-    same = sum(pref_a[i][0] == pref_b[i][0] for i in both)
-    return same, len(both)
+def soft_p(rows):
+    """share of a pair's two calls (orders) preferring x; a call without a verdict counts as half"""
+    return sum({"x": 1.0, "y": 0.0}.get((rows.get(o) or {}).get("prefers"), 0.5) for o in (0, 1)) / 2
+
+
+def agreement(p_a, p_b, ids, ref=False):
+    """expected agreement of one call of A with one call of B over the pairs both judged: an inconsistent pair or a
+    call without a verdict scores half, so inconsistency costs agreement. ref=True: B is the reference (Opus), and
+    only the pairs where it is consistent count. -> (agreement sum, pairs)"""
+    s = n = 0
+    for i in ids:
+        if i not in p_a or i not in p_b or (ref and p_b[i] not in (0.0, 1.0)):
+            continue
+        s += p_a[i] * p_b[i] + (1 - p_a[i]) * (1 - p_b[i])
+        n += 1
+    return s, n
 
 
 def main():
@@ -84,6 +95,8 @@ def main():
     opus_run = next(iter(opus), None)
     prefs = {run: {i: preference(rows) for i, rows in d.items()} for run, d in list(runs.items()) + list(opus.items())}
     ref = prefs.get(opus_run, {})
+    softp = {run: {i: soft_p(rows) for i, rows in d.items()} for run, d in list(runs.items()) + list(opus.items())}
+    refp = softp.get(opus_run, {})
     L = []
 
     def flagged_side(p):
@@ -117,7 +130,7 @@ def main():
                     bias_a += 1
                 elif v0 == "B":
                     bias_b += 1
-        same, both = agreement(pr, ref, list(pairs)) if run != opus_run and ref else (0, 0)
+        same, both = agreement(softp[run], refp, list(pairs), ref=True) if run != opus_run and ref else (0, 0)
         # language fidelity: pairs with exactly one flagged side -> share preferring the other side
         lf = [(i, flagged_side(pairs[i])) for i in decided if flagged_side(pairs[i])]
         lf_ok = sum(pr[i][0] not in (None, "incons") and pr[i][0] != f for i, f in lf)
@@ -141,7 +154,8 @@ def main():
             run, len(decided), n_calls, pct(parse, n_calls), toks, pct(consistent, len(decided)), pct(bias_a, len(decided)),
             pct(bias_b, len(decided)), pct(same, both), both, pct(lf_ok, lf_n), pct(lw, lw_n), pct(ow, ow_n)))
     L.append("consis: both orders agree; biasA/biasB: inconsistent pairs where the first/second position won both times; "
-             "agrOpus: agreement with Opus on pairs where both are consistent (cover = how many); lang-ok: pairs with exactly "
+             "agrOpus: agreement with Opus on the pairs where Opus is consistent (cover = how many), each of the judge's "
+             "two calls scoring 1 if it matches, 0 if not and 1/2 without a verdict (an inconsistent pair scores 1/2); lang-ok: pairs with exactly "
              "one LID-flagged answer where the judge preferred the other one; longWin: share of consistent pairs (length "
              "ratio > 1.5) won by the longer answer, OpusLW: the same for Opus on the same pairs.")
     L.append("")
@@ -153,7 +167,7 @@ def main():
 
     # agreement with Opus by tier / category / task type
     if ref:
-        L.append("AGREEMENT WITH OPUS by slice (consistent pairs on both sides):")
+        L.append("AGREEMENT WITH OPUS by slice (pairs where Opus is consistent; an inconsistent judge pair scores 1/2):")
         slices = [("tier", lambda p: p["tier"]), ("tier, clean pairs only", lambda p: p["tier"] if clean(p) else None),
                   ("category", lambda p: p["category"]), ("task_type", lambda p: p["task_type"])]
         for key, fn in slices:
@@ -163,7 +177,7 @@ def main():
                 cells = []
                 for v in vals:
                     ids = [i for i, p in pairs.items() if fn(p) == v]
-                    s, b = agreement(prefs[run], ref, ids)
+                    s, b = agreement(softp[run], refp, ids, ref=True)
                     cells.append("{}={}({})".format(v, pct(s, b).strip(), b))
                 L.append("    {:34s} {}".format(run, "  ".join(cells)))
         L.append("")
@@ -221,9 +235,9 @@ def main():
     # inter-judge agreement
     names = sorted(runs)
     if len(names) > 1:
-        L.append("INTER-JUDGE AGREEMENT (consistent pairs on both sides):")
+        L.append("INTER-JUDGE AGREEMENT (one call of each judge, both orders, all pairs both judged; inconsistency costs):")
         for a, b in itertools.combinations(names, 2):
-            s, n = agreement(prefs[a], prefs[b], list(pairs))
+            s, n = agreement(softp[a], softp[b], list(pairs))
             L.append("  {:34s} {:34s} {} ({})".format(a, b, pct(s, n), n))
         L.append("")
 
@@ -246,16 +260,18 @@ def main():
         L.append("  middle band (0.2 < fraction < 0.8, would get a second pass): {} ({})".format(mid, pct(mid, len(frac))))
         if ref:
             maj = {i: ("x" if f > 0.5 else "y" if f < 0.5 else "tie") for i, f in frac.items()}
-            both = [i for i in frac if maj[i] != "tie" and ref.get(i, (None,))[0] in ("x", "y")]
-            same = sum(maj[i] == ref[i][0] for i in both)
-            L.append("  majority vs Opus: {} ({} pairs); unanimous pairs vs Opus: {}".format(
+            both = [i for i in frac if refp.get(i) in (0.0, 1.0)]          # Opus consistent in both orders
+            rw = {i: "x" if refp[i] == 1.0 else "y" for i in both}
+            hit = {i: 0.5 if maj[i] == "tie" else float(maj[i] == rw[i]) for i in both}
+            same = sum(hit.values())
+            L.append("  majority vs Opus (a tied vote counts half): {} ({} pairs); unanimous pairs vs Opus: {}".format(
                 pct(same, len(both)), len(both),
-                pct(sum(maj[i] == ref[i][0] for i in both if frac[i] in (0.0, 1.0)), sum(1 for i in both if frac[i] in (0.0, 1.0)))))
+                pct(sum(maj[i] == rw[i] for i in both if frac[i] in (0.0, 1.0)), sum(1 for i in both if frac[i] in (0.0, 1.0)))))
             # agreement of Opus with the fraction, by band
             bands = collections.defaultdict(lambda: [0, 0])
             for i in both:
                 b = "unanimous" if frac[i] in (0.0, 1.0) else "strong" if frac[i] <= 0.2 or frac[i] >= 0.8 else "middle"
-                bands[b][0] += maj[i] == ref[i][0]
+                bands[b][0] += hit[i]
                 bands[b][1] += 1
             L.append("  majority agreement with Opus by band: " + "  ".join("{}={} ({})".format(k, pct(*v), v[1]) for k, v in bands.items()))
         L.append("")

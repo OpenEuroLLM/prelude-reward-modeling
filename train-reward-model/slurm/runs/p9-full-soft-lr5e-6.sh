@@ -1,0 +1,4 @@
+#!/bin/bash
+# nodes: 1
+# Prelude 9B (threeway-dpo), full fine-tuning, full training set
+exec bash train-reward-model/slurm/managed.sh --model prelude-threeway-dpo --run p9-full-soft-lr5e-6 --loss soft --center 0.01 --lr 5e-6 --eval-every 200 --ckpt-every 100 --resume --save --score /pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/rb2.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/rmbench.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/mrb.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/mrb_small.parquet,/pfs/lustrep3/scratch/project_465003466/dasamuel/prelude-reward-modeling/data/reward_model/bench/prelude-threeway-dpo/probes.parquet
